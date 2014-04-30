@@ -36,6 +36,8 @@ public class NLP {
 		
 		JointParser parser;
 		Map <String, DependencyPair> dependencyPairToCount = new HashMap<String, DependencyPair>();   
+		Map <String, Integer> adjectiveToCount = new HashMap<String, Integer>();
+		Map <String, Integer> nounToCount = new HashMap<String, Integer>();
 		try {
 			parser = new JointParser("models/dep.m");
 			//System.out.println("得到支持的依存关系类型集合");
@@ -56,28 +58,58 @@ public class NLP {
 						dp.setCount(dp.getCount()+1);
 						dependencyPairToCount.put(dp.getAdjective()+dp.getNoun(), dp);
 					}
+					if (adjectiveToCount.get(dp.getAdjective()) == null) {
+						adjectiveToCount.put(dp.getAdjective(), 1);
+					} else {
+						adjectiveToCount.put(dp.getAdjective(), adjectiveToCount.get(dp.getAdjective())+1);
+					}
+					if (nounToCount.get(dp.getNoun()) == null) {
+						nounToCount.put(dp.getNoun(), 1);
+					} else {
+						nounToCount.put(dp.getNoun(), nounToCount.get(dp.getNoun())+1);
+					}
+					
 						
-					
-					
 					
 				}
 				
 			}
-			BufferedWriter output = new BufferedWriter(new FileWriter(new File("output.txt")));
+			BufferedWriter output = new BufferedWriter(new FileWriter(new File("pair.txt")));
+			BufferedWriter adjOutput = new BufferedWriter(new FileWriter(new File("adjective.txt")));
+			BufferedWriter nounOutput = new BufferedWriter(new FileWriter(new File("noun.txt")));
 			DependencyPair [] sortDependencyPairArray = new DependencyPair[dependencyPairToCount.size()];
+			DependencyPair [] sortAdjArray = new DependencyPair[adjectiveToCount.size()];
+			DependencyPair [] sortNounArray = new DependencyPair[nounToCount.size()];
 			int index = 0;
 			for (DependencyPair value : dependencyPairToCount.values()) {
 				sortDependencyPairArray[index++] = value;
-
+			}
+			index = 0;
+			for (String key : adjectiveToCount.keySet()) {
+				sortAdjArray[index++] = new DependencyPair(key, "", adjectiveToCount.get(key));
+			}
+			index = 0;
+			for (String key : nounToCount.keySet()) {
+				sortNounArray[index++] = new DependencyPair("", key, nounToCount.get(key));
 			}
 			Arrays.sort(sortDependencyPairArray);
+			Arrays.sort(sortAdjArray);
+			Arrays.sort(sortNounArray);
 			
 			for (DependencyPair dp : sortDependencyPairArray) {
 				output.write(dp.getAdjective() + "->" + dp.getNoun() + ":" + dp.getCount()+"\n");
 			}
+			for (DependencyPair dp : sortAdjArray) {
+				adjOutput.write(dp.getAdjective() + ":" + dp.getCount()+"\n");
+			}
+			for (DependencyPair dp : sortNounArray) {
+				nounOutput.write(dp.getNoun() + ":" + dp.getCount()+"\n");
+			}
 		
 			
 			output.close();
+			adjOutput.close();
+			nounOutput.close();
 			
 			
 			
