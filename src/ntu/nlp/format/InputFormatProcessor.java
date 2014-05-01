@@ -1,6 +1,8 @@
 package ntu.nlp.format;
 
 import java.io.BufferedReader;
+import java.io.InputStreamReader;
+import java.io.FileInputStream;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
@@ -12,7 +14,8 @@ public class InputFormatProcessor {
 	public static List <HotelComment> process(File hotelTraining){
 		List <HotelComment> hotelCommentList = new ArrayList <HotelComment>();
 		try {
-			BufferedReader bf = new BufferedReader(new FileReader(hotelTraining));
+			//BufferedReader bf = new BufferedReader(new FileReader(hotelTraining));
+			BufferedReader bf = new BufferedReader(new InputStreamReader(new FileInputStream(hotelTraining), "UTF8"));
 			String line = null;
 			while ( (line = bf.readLine()) != null) {
 				int like = Integer.parseInt(line);
@@ -31,7 +34,7 @@ public class InputFormatProcessor {
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
-		} 
+		}
 
 		return hotelCommentList;
 
