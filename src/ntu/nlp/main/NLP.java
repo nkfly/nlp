@@ -10,6 +10,7 @@ import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.io.OutputStreamWriter;
 import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -26,6 +27,9 @@ import ntu.nlp.format.HotelComment;
 import ntu.nlp.format.InputFormatProcessor;
 import ntu.nlp.rule.RuleManager;
 
+import ntu.nlp.rule.RuleManager2;
+
+import edu.fudan.nlp.cn.ChineseTrans;
 
 public class NLP {
 
@@ -33,9 +37,9 @@ public class NLP {
 		//System.out.println((new File(".")).getAbsolutePath());
 		File hotelTraining = new File("207884_hotel_training.txt");
 		List <HotelComment> hotelCommentList = InputFormatProcessor.process(hotelTraining);
-		
+
 		JointParser parser;
-		Map <String, DependencyPair> dependencyPairToCount = new HashMap<String, DependencyPair>();   
+		Map <String, DependencyPair> dependencyPairToCount = new HashMap<String, DependencyPair>();
 		Map <String, Integer> adjectiveToCount = new HashMap<String, Integer>();
 		Map <String, Integer> nounToCount = new HashMap<String, Integer>();
 		try {
@@ -48,10 +52,14 @@ public class NLP {
 					String[][] s = tag.tag2Array(sentence);
 					if (s == null)continue;
 					DependencyTree tree = parser.parse2T(s[0],s[1]);
-					//System.out.println(tree);
+
+					//printTree(tree);
+
 					List <List <String> > wordPropertyMatrix = tree.toList();
-					DependencyPair dp = RuleManager.checkDependencyPair(wordPropertyMatrix);
+					//DependencyPair dp = RuleManager.checkDependencyPair(wordPropertyMatrix);
+					DependencyPair dp = RuleManager2.checkDependencyPair(wordPropertyMatrix);
 					if (dp == null) continue;
+					//System.out.println(dp.getNoun() + " " + dp.getAdjective());
 					if (dependencyPairToCount.get(dp.getAdjective()+dp.getNoun()) == null) {
 						dependencyPairToCount.put(dp.getAdjective()+dp.getNoun(), dp);
 					} else {
@@ -68,12 +76,13 @@ public class NLP {
 					} else {
 						nounToCount.put(dp.getNoun(), nounToCount.get(dp.getNoun())+1);
 					}
-					
-						
-					
+
+
+
 				}
-				
+
 			}
+
 			BufferedWriter output = new BufferedWriter(new FileWriter(new File("pair.txt")));
 			BufferedWriter adjOutput = new BufferedWriter(new FileWriter(new File("adjective.txt")));
 			BufferedWriter nounOutput = new BufferedWriter(new FileWriter(new File("noun.txt")));
@@ -95,7 +104,7 @@ public class NLP {
 			Arrays.sort(sortDependencyPairArray);
 			Arrays.sort(sortAdjArray);
 			Arrays.sort(sortNounArray);
-			
+
 			for (DependencyPair dp : sortDependencyPairArray) {
 				output.write(dp.getAdjective() + "->" + dp.getNoun() + ":" + dp.getCount()+"\n");
 			}
@@ -105,14 +114,14 @@ public class NLP {
 			for (DependencyPair dp : sortNounArray) {
 				nounOutput.write(dp.getNoun() + ":" + dp.getCount()+"\n");
 			}
-		
-			
+
+
 			output.close();
 			adjOutput.close();
 			nounOutput.close();
-			
-			
-			
+
+
+
 		} catch (LoadModelException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -120,14 +129,20 @@ public class NLP {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-		
-		
-		
-		
 
-		
+
+
+
+
+
 
 	}
-	
+
+
+	public static void printTree(DependencyTree tree) throws Exception{
+		ChineseTrans ct = new ChineseTrans();
+		System.out.println(ct.toTrad(tree.toString()));
+	}
+
 
 }
