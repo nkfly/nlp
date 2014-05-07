@@ -49,25 +49,25 @@ public class NLP {
 					if (s == null)continue;
 					DependencyTree tree = parser.parse2T(s[0],s[1]);
 					System.out.println(tree);
-//					List <List <String> > wordPropertyMatrix = tree.toList();
-//					DependencyPair dp = RuleManager.checkDependencyPair(wordPropertyMatrix);
-//					if (dp == null) continue;
-//					if (dependencyPairToCount.get(dp.getAdjective()+dp.getNoun()) == null) {
-//						dependencyPairToCount.put(dp.getAdjective()+dp.getNoun(), dp);
-//					} else {
-//						dp.setCount(dp.getCount()+1);
-//						dependencyPairToCount.put(dp.getAdjective()+dp.getNoun(), dp);
-//					}
-//					if (adjectiveToCount.get(dp.getAdjective()) == null) {
-//						adjectiveToCount.put(dp.getAdjective(), 1);
-//					} else {
-//						adjectiveToCount.put(dp.getAdjective(), adjectiveToCount.get(dp.getAdjective())+1);
-//					}
-//					if (nounToCount.get(dp.getNoun()) == null) {
-//						nounToCount.put(dp.getNoun(), 1);
-//					} else {
-//						nounToCount.put(dp.getNoun(), nounToCount.get(dp.getNoun())+1);
-//					}
+					List <List <String> > wordPropertyMatrix = tree.toList();
+					DependencyPair dp = RuleManager.checkDependencyPair(wordPropertyMatrix);
+					if (dp == null) continue;
+					if (dependencyPairToCount.get(dp.getAdjective()+dp.getNoun()) == null) {
+						dependencyPairToCount.put(dp.getAdjective()+dp.getNoun(), dp);
+					} else {
+						dp.setCount(dp.getCount()+1);
+						dependencyPairToCount.put(dp.getAdjective()+dp.getNoun(), dp);
+					}
+					if (adjectiveToCount.get(dp.getAdjective()) == null) {
+						adjectiveToCount.put(dp.getAdjective(), 1);
+					} else {
+						adjectiveToCount.put(dp.getAdjective(), adjectiveToCount.get(dp.getAdjective())+1);
+					}
+					if (nounToCount.get(dp.getNoun()) == null) {
+						nounToCount.put(dp.getNoun(), 1);
+					} else {
+						nounToCount.put(dp.getNoun(), nounToCount.get(dp.getNoun())+1);
+					}
 					
 						
 					
