@@ -18,7 +18,7 @@ public class RuleManager2 {
 		return word.equals("名词");
 	}
 
-	public static int searchDistance(Map index_dependency, int src, int dest){
+	public static int searchDistance(Map <Integer, Integer>index_dependency, int src, int dest){
 		if ( src == dest )
 			return 0;
 		if ( index_dependency.get(src) == -1 ){
