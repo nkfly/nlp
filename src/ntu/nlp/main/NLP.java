@@ -15,8 +15,10 @@ import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import edu.fudan.nlp.cn.tag.POSTagger;
 import edu.fudan.nlp.parser.dep.DependencyTree;
@@ -32,6 +34,8 @@ import ntu.nlp.rule.RuleManager2;
 import edu.fudan.nlp.cn.ChineseTrans;
 
 public class NLP {
+	private static Set <String> stopWords = new HashSet(Arrays.asList("還","來","會","沒","個","較","卻","麼",
+			"並","這個","什麼","整個","再次","總","不過","這家","讓","於","這種","換","們","般","別","覺","女","這樣",""));
 
 	public static void main(String [] args){
 		//System.out.println((new File(".")).getAbsolutePath());
@@ -52,7 +56,7 @@ public class NLP {
 					String[][] s = tag.tag2Array(sentence);
 					if (s == null)continue;
 					DependencyTree tree = parser.parse2T(s[0],s[1]);
-
+					//System.out.println(tree);
 					List <List <String> > wordPropertyMatrix = tree.toList();
 					//DependencyPair dp = RuleManager.checkDependencyPair(wordPropertyMatrix);
 					DependencyPair dp = RuleManager2.checkDependencyPair(wordPropertyMatrix);
@@ -80,10 +84,11 @@ public class NLP {
 				}
 
 			}
-
+			
+			int teamId = 0;
 			BufferedWriter output = new BufferedWriter(new FileWriter(new File("pair.txt")));
-			BufferedWriter adjOutput = new BufferedWriter(new FileWriter(new File("adjective.txt")));
-			BufferedWriter nounOutput = new BufferedWriter(new FileWriter(new File("noun.txt")));
+			BufferedWriter adjOutput = new BufferedWriter(new FileWriter(new File("opinion_"+teamId+".txt")));
+			BufferedWriter nounOutput = new BufferedWriter(new FileWriter(new File("aspect_"+teamId+".txt")));
 			DependencyPair [] sortDependencyPairArray = new DependencyPair[dependencyPairToCount.size()];
 			DependencyPair [] sortAdjArray = new DependencyPair[adjectiveToCount.size()];
 			DependencyPair [] sortNounArray = new DependencyPair[nounToCount.size()];
@@ -106,11 +111,19 @@ public class NLP {
 			for (DependencyPair dp : sortDependencyPairArray) {
 				output.write(dp.getAdjective() + "->" + dp.getNoun() + ":" + dp.getCount()+"\n");
 			}
+			int outputCount = 0;
 			for (DependencyPair dp : sortAdjArray) {
-				adjOutput.write(dp.getAdjective() + ":" + dp.getCount()+"\n");
+				if ( stopWords.contains(dp.getAdjective()))continue;
+				if (outputCount >= 100)break;
+				adjOutput.write(dp.getAdjective() +"\n");
+				outputCount++;
 			}
+			outputCount = 0;
 			for (DependencyPair dp : sortNounArray) {
-				nounOutput.write(dp.getNoun() + ":" + dp.getCount()+"\n");
+				if ( stopWords.contains(dp.getNoun()))continue;
+				if (outputCount >= 100)break;
+				nounOutput.write(dp.getNoun() + "\n");
+				outputCount++;
 			}
 
 
