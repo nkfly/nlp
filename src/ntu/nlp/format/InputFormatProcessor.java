@@ -9,8 +9,14 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 public class InputFormatProcessor {
+	public static List <DocumentVector> convertToDocumentVector(Map <String, Integer> wordToDimensionMap ,List <HotelComment> hotelCommentList){
+		
+		return null;
+		
+	}
 	public static List <HotelComment> process(File hotelTraining){
 		List <HotelComment> hotelCommentList = new ArrayList <HotelComment>();
 		try {
