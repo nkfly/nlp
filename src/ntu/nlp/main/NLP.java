@@ -22,6 +22,8 @@ import java.util.Set;
 
 import org.apache.commons.lang3.StringUtils;
 
+import sun.security.util.Length;
+
 import edu.fudan.nlp.cn.tag.POSTagger;
 import edu.fudan.nlp.parser.dep.DependencyTree;
 import edu.fudan.nlp.parser.dep.JointParser;
@@ -68,6 +70,49 @@ public class NLP {
 		}
 		bw.close();
 		
+		bw = new BufferedWriter(new FileWriter(new File("doucment_vector.csv")));
+		for (int i = 1;i <= maxDimension;i++) {
+			bw.write(i + ",");
+		}
+		bw.write("class\n");
+		
+		for (DocumentVector dv : documentVectorList ) {
+			bw.write(dv.toCSVString(maxDimension) + "\n");			
+		}
+		bw.close();
+		
+		File regression = new File("regression.txt");
+		BufferedReader br = new BufferedReader(new FileReader(regression));
+		String line;
+		br.readLine();
+		br.readLine();
+		
+		List <String> positiveOpinion = new ArrayList <String>();
+		List <String> negativeOpinion = new ArrayList <String>();
+		
+		int index = 1;
+		Map <Integer, String> dimensionToWord = makeDimensionToWordMap(opinionWords);
+		while ((line = br.readLine()) != null) {
+			if (Double.valueOf(line.replaceAll("\\s+", " ").split(" ")[1]) < 0) {
+				positiveOpinion.add(dimensionToWord.get(index));
+			} else {
+				negativeOpinion.add(dimensionToWord.get(index));
+			}
+			index++;
+		}
+		br.close();
+		
+		bw = new BufferedWriter(new FileWriter(new File("positive_opinion.txt")));
+		for (int i = 0;i < positiveOpinion.size();i++) {
+			bw.write(positiveOpinion.get(i)+"\n");
+		}
+		bw.close();
+		
+		bw = new BufferedWriter(new FileWriter(new File("negative_opinion.txt")));
+		for (int i = 0;i < negativeOpinion.size();i++) {
+			bw.write(negativeOpinion.get(i)+"\n");
+		}
+		bw.close();
 		
 		
 	}
@@ -79,6 +124,18 @@ public class NLP {
 		int dimension = 1;// note the dimension starts with 1, because LIBSVM requires that
 		while ((word = br.readLine()) != null) {
 			wordToDimensionMap.put(word, dimension++);			
+		}
+		br.close();
+		return wordToDimensionMap;
+	}
+	
+	public static Map <Integer, String> makeDimensionToWordMap(File opinionWords) throws IOException{
+		BufferedReader br = new BufferedReader(new FileReader(opinionWords));
+		String word;
+		Map <Integer, String> wordToDimensionMap = new HashMap<Integer, String>();
+		int dimension = 1;// note the dimension starts with 1, because LIBSVM requires that
+		while ((word = br.readLine()) != null) {
+			wordToDimensionMap.put(dimension++, word);			
 		}
 		br.close();
 		return wordToDimensionMap;

@@ -28,6 +28,20 @@ public class DocumentVector {
 	public Dimension [] getDimensionArray() {
 		return dimensionArray;
 	}
+	public String toCSVString(int maxDimension) {
+		double [] vals = new double[maxDimension];
+		for (Dimension d : dimensionArray) {
+			vals[d.getDimension()-1] = d.getValue();
+		}
+		String csv = "";
+		for (int i = 0;i < vals.length;i++) {
+			csv += (vals[i] + ",");
+		}
+		// class is fixed at the end
+		csv += like;
+
+		return csv;
+	}
 
 
 
