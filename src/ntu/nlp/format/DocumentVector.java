@@ -7,6 +7,13 @@ public class DocumentVector {
 	private int id;
 	private int like;
 	private Dimension [] dimensionArray;
+	public DocumentVector(int id, int like , Dimension [] dimensionArray) {
+		this.id = id;
+		this.like = like;
+		this.dimensionArray = dimensionArray;
+		
+		
+	}
 	public String toLIBSVMString(int maxDimension) {
 		String libsvm = like + " ";
 		boolean haveWritten = false;
@@ -16,6 +23,10 @@ public class DocumentVector {
 		}
 		if(!haveWritten)libsvm += maxDimension+":0";
 		return libsvm.trim();
+	}
+	
+	public Dimension [] getDimensionArray() {
+		return dimensionArray;
 	}
 
 

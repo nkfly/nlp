@@ -6,5 +6,6 @@
 	<classpathentry kind="lib" path="lib/lucene-core-4.0.0.jar"/>
 	<classpathentry kind="lib" path="lib/lucene-queryparser-4.0.0.jar"/>
 	<classpathentry kind="lib" path="lib/trove.jar"/>
+	<classpathentry kind="lib" path="lib/commons-lang3-3.3.2.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>

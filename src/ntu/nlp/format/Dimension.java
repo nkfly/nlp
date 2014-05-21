@@ -23,6 +23,10 @@ public class Dimension implements Comparable<Dimension>{
 		return value;
 
 	}
+	public void setValue(double value){
+		this.value =  value;
+
+	}
 
 
 

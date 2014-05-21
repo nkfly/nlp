@@ -20,6 +20,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import org.apache.commons.lang3.StringUtils;
+
 import edu.fudan.nlp.cn.tag.POSTagger;
 import edu.fudan.nlp.parser.dep.DependencyTree;
 import edu.fudan.nlp.parser.dep.JointParser;
@@ -64,6 +66,7 @@ public class NLP {
 		for (DocumentVector dv : documentVectorList ) {
 			bw.write(dv.toLIBSVMString(maxDimension) + "\n");			
 		}
+		bw.close();
 		
 		
 		
@@ -77,6 +80,7 @@ public class NLP {
 		while ((word = br.readLine()) != null) {
 			wordToDimensionMap.put(word, dimension++);			
 		}
+		br.close();
 		return wordToDimensionMap;
 	}
 
