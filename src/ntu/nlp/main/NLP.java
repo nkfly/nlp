@@ -32,6 +32,7 @@ import ntu.nlp.format.DependencyPair;
 import ntu.nlp.format.DocumentVector;
 import ntu.nlp.format.HotelComment;
 import ntu.nlp.format.InputFormatProcessor;
+import ntu.nlp.format.Word;
 import ntu.nlp.rule.RuleManager;
 
 import ntu.nlp.rule.RuleManager2;
@@ -52,6 +53,10 @@ public class NLP {
 
 
 
+	}
+	
+	public static void stageThreeProcess() {
+		
 	}
 	
 	public static void stageTwoProcess() throws IOException{
@@ -87,30 +92,39 @@ public class NLP {
 		br.readLine();
 		br.readLine();
 		
-		List <String> positiveOpinion = new ArrayList <String>();
-		List <String> negativeOpinion = new ArrayList <String>();
+		List <Word> positiveOpinion = new ArrayList <Word>();
+		List <Word> negativeOpinion = new ArrayList <Word>();
 		
 		int index = 1;
 		Map <Integer, String> dimensionToWord = makeDimensionToWordMap(opinionWords);
 		while ((line = br.readLine()) != null) {
-			if (Double.valueOf(line.replaceAll("\\s+", " ").split(" ")[1]) < 0) {
-				positiveOpinion.add(dimensionToWord.get(index));
+			double value = Double.valueOf(line.replaceAll("\\s+", " ").split(" ")[1]); 
+			if ( value < 0) {
+				positiveOpinion.add( new Word(dimensionToWord.get(index), -1*value) );
 			} else {
-				negativeOpinion.add(dimensionToWord.get(index));
+				negativeOpinion.add(new Word(dimensionToWord.get(index), value));
 			}
 			index++;
 		}
 		br.close();
 		
+		Word [] positiveOpinionArray = new Word[positiveOpinion.size()];
+		positiveOpinionArray = positiveOpinion.toArray(positiveOpinionArray);
+		Word [] negativeOpinionArray = new Word[negativeOpinion.size()];
+		negativeOpinionArray = negativeOpinion.toArray(negativeOpinionArray);
+		
+		Arrays.sort(positiveOpinionArray);
+		Arrays.sort(negativeOpinionArray);
+
 		bw = new BufferedWriter(new FileWriter(new File("positive_opinion.txt")));
-		for (int i = 0;i < positiveOpinion.size();i++) {
-			bw.write(positiveOpinion.get(i)+"\n");
+		for (int i = 0;i < positiveOpinionArray.length;i++) {
+			bw.write(positiveOpinionArray[i].getWord() + " " + positiveOpinionArray[i].getValue() +"\n");
 		}
 		bw.close();
 		
 		bw = new BufferedWriter(new FileWriter(new File("negative_opinion.txt")));
-		for (int i = 0;i < negativeOpinion.size();i++) {
-			bw.write(negativeOpinion.get(i)+"\n");
+		for (int i = 0;i < negativeOpinionArray.length;i++) {
+			bw.write(negativeOpinionArray[i].getWord() + " " + negativeOpinionArray[i].getValue()+"\n");
 		}
 		bw.close();
 		

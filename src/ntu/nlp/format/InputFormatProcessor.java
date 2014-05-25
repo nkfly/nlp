@@ -37,11 +37,27 @@ public class InputFormatProcessor {
 				for (String word : wordToDimensionMap.keySet()) {
 					if (sentences[i].indexOf(word) == -1)continue;
 					
-					if ( dimensionToTermFrequency.get(wordToDimensionMap.get(word)) == null ) {
-						dimensionToTermFrequency.put(wordToDimensionMap.get(word), StringUtils.countMatches(sentences[i], word));
+					if (dimensionToTermFrequency.get(wordToDimensionMap.get(word)) == null) {
+						if (isPrefixNegative(sentences[i], word)) {
+							dimensionToTermFrequency.put(wordToDimensionMap.get(word), -1);
+						} else {
+							dimensionToTermFrequency.put(wordToDimensionMap.get(word), 1);
+						}
+						
 					} else {
-						dimensionToTermFrequency.put(wordToDimensionMap.get(word), dimensionToTermFrequency.get(wordToDimensionMap.get(word)) + StringUtils.countMatches(sentences[i], word));
+						if (isPrefixNegative(sentences[i], word)) {
+							dimensionToTermFrequency.put(wordToDimensionMap.get(word), dimensionToTermFrequency.get(wordToDimensionMap.get(word)) -1);
+						} else {
+							dimensionToTermFrequency.put(wordToDimensionMap.get(word), dimensionToTermFrequency.get(wordToDimensionMap.get(word)) +1);
+						}
+						
 					}
+					
+//					if ( dimensionToTermFrequency.get(wordToDimensionMap.get(word)) == null ) {
+//						dimensionToTermFrequency.put(wordToDimensionMap.get(word), StringUtils.countMatches(sentences[i], word));
+//					} else {
+//						dimensionToTermFrequency.put(wordToDimensionMap.get(word), dimensionToTermFrequency.get(wordToDimensionMap.get(word)) + StringUtils.countMatches(sentences[i], word));
+//					}
 				}
 			}
 			
@@ -69,6 +85,15 @@ public class InputFormatProcessor {
 			
 		}
 		return documentVectorList;
+		
+	}
+	
+	private static boolean isPrefixNegative(String sentence, String word) {
+		int index = sentence.indexOf(word);
+		for (int i = index-1;i >= 0 && i >= index - 3 ; i--) {
+			if (sentence.charAt(i) == '不')return true;
+		}
+		return false;
 		
 	}
 	public static List <HotelComment> process(File hotelTraining){
