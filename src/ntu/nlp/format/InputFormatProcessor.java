@@ -88,7 +88,7 @@ public class InputFormatProcessor {
 		
 	}
 	
-	private static boolean isPrefixNegative(String sentence, String word) {
+	public static boolean isPrefixNegative(String sentence, String word) {
 		int index = sentence.indexOf(word);
 		for (int i = index-1;i >= 0 && i >= index - 3 ; i--) {
 			if (sentence.charAt(i) == '不')return true;

@@ -45,7 +45,7 @@ public class NLP {
 
 	public static void main(String [] args){
 		try {
-			stageTwoProcess();
+			stageThreeProcess();
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -55,8 +55,95 @@ public class NLP {
 
 	}
 	
-	public static void stageThreeProcess() {
+	public static void stageThreeProcess() throws IOException {
+		File hotelTraining = new File("207884_hotel_training.txt");
+		List <HotelComment> hotelCommentList = InputFormatProcessor.process(hotelTraining);
 		
+		
+		Set <String> aspectSet = makeWordSet(new File("gt_aspect.txt"));
+		
+		Map <String, Double> opinionToPolarity = new HashMap<String, Double>();
+		BufferedReader br = new BufferedReader(new FileReader(new File("positive_opinion.txt")));
+		String line;
+		while ((line = br.readLine()) != null) {
+			String [] tokens = line.split("\\s+");
+			opinionToPolarity.put(tokens[0], Double.valueOf(tokens[1]));
+		}
+		br.close();
+		br = new BufferedReader(new FileReader(new File("negative_opinion.txt")));
+		while ((line = br.readLine()) != null) {
+			String [] tokens = line.split("\\s+");
+			opinionToPolarity.put(tokens[0], -1*Double.valueOf(tokens[1]));
+		}
+		br.close();
+		
+		BufferedWriter bw = new BufferedWriter(new FileWriter(new File("hotel_test_12.out")));
+		for (HotelComment hotelComment : hotelCommentList) {
+			Map <String, Double> aspectToPolarity = new HashMap <String, Double>();
+			for (String sentence : hotelComment.getSentences()) {
+				for (String aspect : aspectSet) {
+					if (sentence.indexOf(aspect) == -1) continue;
+					
+					if (aspectToPolarity.get(aspect) != null) {
+						aspectToPolarity.put(aspect, aspectToPolarity.get(aspect) + calculatePositionalPolarity(sentence, aspect, opinionToPolarity));
+					} else {
+						aspectToPolarity.put(aspect, calculatePositionalPolarity(sentence, aspect, opinionToPolarity));
+					}
+				}
+			}
+			bw.write(hotelComment.getId() + "\n");
+			String positiveAspect = "";
+			String negativeAspect = "";
+			double sumOfPolarity = 0.0;
+			for (String aspect : aspectToPolarity.keySet()) {
+				if (aspectToPolarity.get(aspect) >= 0) {
+					positiveAspect += (aspect + "\t");
+				} else {
+					negativeAspect += (aspect + "\t");
+				}
+				sumOfPolarity += aspectToPolarity.get(aspect);
+			}
+			bw.write(positiveAspect.trim() + "\n");
+			bw.write(negativeAspect.trim() + "\n");
+			bw.write( (sumOfPolarity >= 0 ? 1 : 2) + "\n");
+		}
+		bw.close();
+		
+	}
+	
+	public static double calculatePositionalPolarity( String sentence , String aspect, Map <String, Double> opinionToPolarity) {
+		int aspectIndex = sentence.indexOf(aspect);
+		double polarity = 0.0;
+		for (String opinion : opinionToPolarity.keySet()) {
+			int opinionWordIndex = sentence.indexOf(opinion); 
+			if (opinionWordIndex == -1)continue;
+			
+			int distance = Math.abs(opinionWordIndex - aspectIndex);
+			if (distance == 0)continue;
+			
+			double coeff = 5/distance;// 5 is a magic number
+			if (InputFormatProcessor.isPrefixNegative(sentence, aspect)) {
+				polarity += -1*opinionToPolarity.get(opinion)*coeff;
+			} else {
+				polarity += opinionToPolarity.get(opinion)*coeff;
+			}
+			
+			
+		}
+		return polarity;
+		
+		
+	}
+	
+	public static Set<String> makeWordSet(File file) throws IOException {
+		String word;
+		BufferedReader br = new BufferedReader(new FileReader(file));
+		Set <String> set = new HashSet <String>(); 
+		while ((word = br.readLine()) != null) {
+			set.add(word);			
+		}
+		br.close();
+		return set;
 	}
 	
 	public static void stageTwoProcess() throws IOException{
