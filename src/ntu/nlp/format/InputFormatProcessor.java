@@ -23,6 +23,7 @@ public class InputFormatProcessor {
 			dimensionToIdf.put(dimension, 0.0);
 		}
 		
+		double averageDocumentLength = 0.0;
 		for (HotelComment hc : hotelCommentList) {
 			Map <Integer, Integer> dimensionToTermFrequency = new HashMap <Integer, Integer>();
 			
@@ -70,20 +71,27 @@ public class InputFormatProcessor {
 			Arrays.sort(dimensionArray);
 			documentVectorList.add(new DocumentVector(hc.getId(), hc.getLike(), dimensionArray));
 			
+			averageDocumentLength +=  StringUtils.join(hc.getSentences(),"").length();
+			
 		}
 		
 		int numberOfDocument = hotelCommentList.size();
+		averageDocumentLength = averageDocumentLength/ numberOfDocument;
 		for (Integer dimension : dimensionToIdf.keySet()) {
 			dimensionToIdf.put(dimension, Math.log(numberOfDocument/(dimensionToIdf.get(dimension)+1)) );			
 		}
 		
-		for (DocumentVector dv : documentVectorList) {
-			Dimension [] dimensionArray = dv.getDimensionArray();
+		double okapiK = 2.0;
+		double okapiB = 0.75;
+		for (int i = 0;i < documentVectorList.size();i++) {
+			Dimension [] dimensionArray = documentVectorList.get(i).getDimensionArray();
 			for (Dimension d : dimensionArray) {
-				d.setValue(d.getValue()*dimensionToIdf.get(d.getDimension()));
+				//d.setValue( (okapiK+1)*d.getValue()/(d.getValue()+okapiK*(1-okapiB+okapiB*StringUtils.join(hotelCommentList.get(i).getSentences(),"").length()/averageDocumentLength ))*dimensionToIdf.get(d.getDimension()));// use okapi
+				d.setValue( d.getValue()*dimensionToIdf.get(d.getDimension()));// use okapi
 			}
 			
 		}
+		
 		return documentVectorList;
 		
 	}

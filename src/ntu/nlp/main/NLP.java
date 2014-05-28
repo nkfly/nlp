@@ -45,7 +45,7 @@ public class NLP {
 
 	public static void main(String [] args){
 		try {
-			stageThreeProcess();
+			stageTwoProcess();
 		} catch (Exception e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -136,10 +136,16 @@ public class NLP {
 			String negativeAspect = "";
 			double sumOfPolarity = 0.0;
 			for (String aspect : aspectToPolarity.keySet()) {
-				if (aspectToPolarity.get(aspect) >= 0) {
+				if (aspectToPolarity.get(aspect) > 0) {
 					positiveAspect += (aspect + "\t");
-				} else {
+				} else if (aspectToPolarity.get(aspect) < 0){
 					negativeAspect += (aspect + "\t");
+				} else {// the aspect polarity is 0, so it is assumed to be the same as the document
+					if (hotelComment.getLike() == 1) {
+						positiveAspect += (aspect + "\t");
+					} else {
+						negativeAspect += (aspect + "\t");
+					}
 				}
 				sumOfPolarity += aspectToPolarity.get(aspect);
 			}
