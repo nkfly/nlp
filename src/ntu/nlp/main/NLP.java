@@ -46,7 +46,7 @@ public class NLP {
 	public static void main(String [] args){
 		try {
 			stageThreeProcess();
-		} catch (IOException e) {
+		} catch (Exception e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
@@ -55,7 +55,7 @@ public class NLP {
 
 	}
 	
-	public static void stageThreeProcess() throws IOException {
+	public static void stageThreeProcess() throws Exception {
 		File hotelTraining = new File("207884_hotel_training.txt");
 		List <HotelComment> hotelCommentList = InputFormatProcessor.process(hotelTraining);
 		
@@ -78,12 +78,52 @@ public class NLP {
 		br.close();
 		
 		BufferedWriter bw = new BufferedWriter(new FileWriter(new File("hotel_test_12.out")));
+		JointParser parser;
+		parser = new JointParser("models/dep.m");
+		POSTagger tag = new POSTagger("models/seg.m","models/pos.m");
+					
+					
 		for (HotelComment hotelComment : hotelCommentList) {
 			Map <String, Double> aspectToPolarity = new HashMap <String, Double>();
 			for (String sentence : hotelComment.getSentences()) {
 				for (String aspect : aspectSet) {
 					if (sentence.indexOf(aspect) == -1) continue;
 					
+					// use dependency parsing to get correct adjective
+					String[][] s = tag.tag2Array(sentence);
+					if (s == null)continue;
+					DependencyTree tree = parser.parse2T(s[0],s[1]);
+					List <List <String> > wordPropertyMatrix = tree.toList();
+					boolean dependencySuccess = false;
+					for (int i = 0;i < wordPropertyMatrix.size();i++) {
+						if (wordPropertyMatrix.get(i).get(0).equals(aspect)){
+							int aspectDependencyId = Integer.parseInt(wordPropertyMatrix.get(i).get(2));
+							if (aspectDependencyId == -1)continue;
+							
+							String opinion = wordPropertyMatrix.get( aspectDependencyId ).get(0);
+							if (opinionToPolarity.get(opinion) == null)continue;// this opinion is not in the set
+							
+							if (aspectToPolarity.get(aspect) != null) {
+								if (InputFormatProcessor.isPrefixNegative(sentence, opinion)) {
+									aspectToPolarity.put(aspect, aspectToPolarity.get(aspect) - opinionToPolarity.get( opinion  ));
+								} else {
+									aspectToPolarity.put(aspect, aspectToPolarity.get(aspect) + opinionToPolarity.get( opinion  ));
+								}
+							} else {
+								if (InputFormatProcessor.isPrefixNegative(sentence, opinion)) {
+									aspectToPolarity.put(aspect, - opinionToPolarity.get( opinion  ));
+								} else {
+									aspectToPolarity.put(aspect, opinionToPolarity.get( opinion  ));
+								}
+							}
+							dependencySuccess = true;
+							break;
+						} 
+					}
+					if (dependencySuccess)continue;
+					
+					
+					// dependency parsing failed, use the primitive approach
 					if (aspectToPolarity.get(aspect) != null) {
 						aspectToPolarity.put(aspect, aspectToPolarity.get(aspect) + calculatePositionalPolarity(sentence, aspect, opinionToPolarity));
 					} else {
@@ -122,7 +162,7 @@ public class NLP {
 			if (distance == 0)continue;
 			
 			double coeff = 5/distance;// 5 is a magic number
-			if (InputFormatProcessor.isPrefixNegative(sentence, aspect)) {
+			if (InputFormatProcessor.isPrefixNegative(sentence, opinion)) {
 				polarity += -1*opinionToPolarity.get(opinion)*coeff;
 			} else {
 				polarity += opinionToPolarity.get(opinion)*coeff;
@@ -134,7 +174,6 @@ public class NLP {
 		
 		
 	}
-	
 	public static Set<String> makeWordSet(File file) throws IOException {
 		String word;
 		BufferedReader br = new BufferedReader(new FileReader(file));
@@ -146,9 +185,18 @@ public class NLP {
 		return set;
 	}
 	
+	public static Set<String> makeIntersectionWordSet(File file1, File file2) throws IOException {
+		
+		Set <String> set1 = makeWordSet(file1);
+		Set <String> set2 = makeWordSet(file2); 
+		set1.retainAll(set2);
+		return set1;
+	}
+	
 	public static void stageTwoProcess() throws IOException{
 		
-		File opinionWords = new File("gt_opinion.txt");
+		Set <String>  opinionWords = makeWordSet(new File("gt_opinion.txt"));
+		System.out.println(opinionWords.size());
 		Map <String, Integer> wordToDimensionMap = makeWordToDimensionMap(opinionWords);
 		int maxDimension = wordToDimensionMap.size();
 		File hotelTraining = new File("207884_hotel_training.txt");
@@ -183,7 +231,7 @@ public class NLP {
 		List <Word> negativeOpinion = new ArrayList <Word>();
 		
 		int index = 1;
-		Map <Integer, String> dimensionToWord = makeDimensionToWordMap(opinionWords);
+		Map <Integer, String> dimensionToWord = makeDimensionToWordMap(wordToDimensionMap);
 		while ((line = br.readLine()) != null) {
 			double value = Double.valueOf(line.replaceAll("\\s+", " ").split(" ")[1]); 
 			if ( value < 0) {
@@ -218,28 +266,22 @@ public class NLP {
 		
 	}
 	
-	public static Map <String, Integer> makeWordToDimensionMap(File opinionWords) throws IOException{
-		BufferedReader br = new BufferedReader(new FileReader(opinionWords));
-		String word;
+	public static Map <String, Integer> makeWordToDimensionMap(Set <String> opinionWords) throws IOException{
 		Map <String, Integer> wordToDimensionMap = new HashMap<String, Integer>();
 		int dimension = 1;// note the dimension starts with 1, because LIBSVM requires that
-		while ((word = br.readLine()) != null) {
+		for (String word : opinionWords) {
 			wordToDimensionMap.put(word, dimension++);			
 		}
-		br.close();
 		return wordToDimensionMap;
 	}
 	
-	public static Map <Integer, String> makeDimensionToWordMap(File opinionWords) throws IOException{
-		BufferedReader br = new BufferedReader(new FileReader(opinionWords));
-		String word;
-		Map <Integer, String> wordToDimensionMap = new HashMap<Integer, String>();
-		int dimension = 1;// note the dimension starts with 1, because LIBSVM requires that
-		while ((word = br.readLine()) != null) {
-			wordToDimensionMap.put(dimension++, word);			
+	public static Map <Integer, String> makeDimensionToWordMap(Map <String, Integer> wordToDimensionMap) throws IOException{
+		
+		Map <Integer, String> dimensionToWordMap = new HashMap<Integer, String>();
+		for (String word : wordToDimensionMap.keySet()) {
+			dimensionToWordMap.put(wordToDimensionMap.get(word), word);			
 		}
-		br.close();
-		return wordToDimensionMap;
+		return dimensionToWordMap;
 	}
 
 	public static void printTree(DependencyTree tree) throws Exception{
@@ -247,7 +289,7 @@ public class NLP {
 		System.out.println(ct.toTrad(tree.toString()));
 	}
 	
-	public static void stageOneProcess(){
+	public static void stageOneProcess() throws IOException{
 		//System.out.println((new File(".")).getAbsolutePath());
 				File hotelTraining = new File("207884_hotel_training.txt");
 				List <HotelComment> hotelCommentList = InputFormatProcessor.process(hotelTraining);
@@ -295,7 +337,7 @@ public class NLP {
 
 					}
 					
-					int teamId = 0;
+					int teamId = 12;
 					BufferedWriter output = new BufferedWriter(new FileWriter(new File("pair.txt")));
 					BufferedWriter adjOutput = new BufferedWriter(new FileWriter(new File("opinion_"+teamId+".txt")));
 					BufferedWriter nounOutput = new BufferedWriter(new FileWriter(new File("aspect_"+teamId+".txt")));
@@ -324,14 +366,14 @@ public class NLP {
 					int outputCount = 0;
 					for (DependencyPair dp : sortAdjArray) {
 						if ( stopWords.contains(dp.getAdjective()))continue;
-						if (outputCount >= 100)break;
+						//if (outputCount >= 100)break;
 						adjOutput.write(dp.getAdjective() +"\n");
 						outputCount++;
 					}
 					outputCount = 0;
 					for (DependencyPair dp : sortNounArray) {
 						if ( stopWords.contains(dp.getNoun()))continue;
-						if (outputCount >= 100)break;
+						//if (outputCount >= 100)break;
 						nounOutput.write(dp.getNoun() + "\n");
 						outputCount++;
 					}
