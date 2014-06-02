@@ -19,6 +19,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.Vector;
 
 import org.apache.commons.lang3.StringUtils;
 
@@ -45,7 +46,35 @@ public class NLP {
 
 	public static void main(String [] args){
 		try {
-			stageTwoProcess();
+			File hotelTraining = new File("207884_hotel_training.txt");
+			List <HotelComment> hotelCommentList = InputFormatProcessor.process(hotelTraining);
+			Vector <Vector <Word> > opinionInSentences = new Vector< Vector <Word> > ();
+			Set <String> gtOpinion = makeWordSet(new File("gt_opinion.txt"));
+			for (HotelComment hc : hotelCommentList) {
+				String concatSentence = StringUtils.join(hc.getSentences(), "");
+				Vector <Word> opinions = new Vector <Word>();
+				for (String opinion : gtOpinion) {
+					if (concatSentence.indexOf(opinion) != -1) {
+						if (InputFormatProcessor.isPrefixNegative(concatSentence, opinion)) {
+							opinions.add(new Word(opinion, -1));
+						} else {
+							opinions.add(new Word(opinion, 1));
+						}
+						
+					}
+				}
+				opinionInSentences.add(opinions);
+			}
+			Map <String, Integer> wordToLike = new HashMap <String, Integer>(); 
+			recursiveDetermineMLEOpinionWord(opinionInSentences, wordToLike, hotelCommentList);
+			BufferedWriter bw = new BufferedWriter(new FileWriter(new File("recursive_opinion.txt")));
+			for (String key : wordToLike.keySet()) {
+				bw.write(key + ":" + wordToLike.get(key)+"\n");
+			}
+			bw.close();
+
+			
+			
 		} catch (Exception e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -53,6 +82,46 @@ public class NLP {
 
 
 
+	}
+	
+	
+	
+	public static void recursiveDetermineMLEOpinionWord(Vector <Vector <Word>> opinionInSentences , Map <String, Integer> wordToLike, List<HotelComment> hcl)  {
+		
+		int minIndex = -1;
+		int minSize = 1000000;
+		for (int i = 0;i < opinionInSentences.size();i++) {
+			if (opinionInSentences.get(i).size() != 0 && opinionInSentences.get(i).size() < minSize) {
+				minSize = opinionInSentences.get(i).size();
+				minIndex = i;
+			}
+		}
+		
+		if (minIndex == -1)return;
+		
+		
+		
+		String determinedWord = opinionInSentences.get(minIndex).get(0).getWord();
+		
+		double sumOfWeight = 0.0;
+		
+		
+		for (int i = 0;i < opinionInSentences.size(); i++) {
+			Vector <Word> row = opinionInSentences.get(i);
+			for (int j = 0;j < row.size();j++){
+				if (row.get(j).getWord().equals(determinedWord)) {
+					sumOfWeight += row.get(j).getValue()/Math.pow(row.size(), 0.5)*(hcl.get(i).getLike() == 1 ? 1 : -1);
+					row.remove(j);
+					break;
+				}
+			}
+		}
+		if (sumOfWeight > 0)wordToLike.put(determinedWord, 1);
+		else if (sumOfWeight < 0)wordToLike.put(determinedWord, -1);
+		else wordToLike.put(determinedWord, hcl.get(minIndex).getLike());
+		
+		recursiveDetermineMLEOpinionWord(opinionInSentences, wordToLike, hcl);
+				
 	}
 	
 	public static void stageThreeProcess() throws Exception {
