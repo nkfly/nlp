@@ -46,34 +46,7 @@ public class NLP {
 
 	public static void main(String [] args){
 		try {
-			File hotelTraining = new File("207884_hotel_training.txt");
-			List <HotelComment> hotelCommentList = InputFormatProcessor.process(hotelTraining);
-			Vector <Vector <Word> > opinionInSentences = new Vector< Vector <Word> > ();
-			Set <String> gtOpinion = makeWordSet(new File("gt_opinion.txt"));
-			for (HotelComment hc : hotelCommentList) {
-				String concatSentence = StringUtils.join(hc.getSentences(), "");
-				Vector <Word> opinions = new Vector <Word>();
-				for (String opinion : gtOpinion) {
-					if (concatSentence.indexOf(opinion) != -1) {
-						if (InputFormatProcessor.isPrefixNegative(concatSentence, opinion)) {
-							opinions.add(new Word(opinion, -1));
-						} else {
-							opinions.add(new Word(opinion, 1));
-						}
-						
-					}
-				}
-				opinionInSentences.add(opinions);
-			}
-			Map <String, Integer> wordToLike = new HashMap <String, Integer>(); 
-			recursiveDetermineMLEOpinionWord(opinionInSentences, wordToLike, hotelCommentList);
-			BufferedWriter bw = new BufferedWriter(new FileWriter(new File("recursive_opinion.txt")));
-			for (String key : wordToLike.keySet()) {
-				bw.write(key + ":" + wordToLike.get(key)+"\n");
-			}
-			bw.close();
-
-			
+			stageThreeProcess();
 			
 		} catch (Exception e) {
 			// TODO Auto-generated catch block
@@ -82,6 +55,74 @@ public class NLP {
 
 
 
+	}
+	
+	public static void calculateOpinionAccuracy() throws IOException {
+		Set <String> positiveOpinion = makeWordSet(new File("positive_opinion.txt"));
+		Set <String> negativeOpinion = makeWordSet(new File("negative_opinion.txt"));
+		Map <String, Integer> lmEstimation = new HashMap<String, Integer>();
+		for (String p : positiveOpinion)lmEstimation.put(p, 1);
+		for (String n : negativeOpinion)lmEstimation.put(n, -1);
+		Map <String, Integer> recursiveEstimation = makeOpinionMap(new File("recursive_opinion.txt"));
+		Map <String, Integer> answer = makeOpinionMap(new File("labeled_opinion.txt"));
+		System.out.println("linear model accuracy : " + calculateAccuracy(lmEstimation, answer));
+		System.out.println("recursive model accuracy : " + calculateAccuracy(recursiveEstimation, answer));
+		
+	}
+	
+	public static Map <String, Integer>makeOpinionMap(File f) throws IOException {
+		Map <String, Integer> result = new HashMap<String, Integer>();
+		BufferedReader br = new BufferedReader(new FileReader(f));
+		String line;
+		while((line = br.readLine()) != null) {
+			System.out.println(line);
+			String [] tokens = line.split("\\s+|:");
+			result.put(tokens[0], Integer.parseInt(tokens[1]));
+		}
+		br.close();
+		return result;
+	}
+	
+	public static double calculateAccuracy(Map <String, Integer> estimation, Map <String, Integer> answer){
+		double match = 0.0;
+		for (String word : estimation.keySet()) {
+			if (estimation.get(word) == answer.get(word)) {
+				match += 1;
+			}
+		}
+		return match / estimation.size();
+		
+	}
+	
+	public static void runRecursiveDetermineMLEOpinionWord() throws IOException {
+		File hotelTraining = new File("207884_hotel_training.txt");
+		List <HotelComment> hotelCommentList = InputFormatProcessor.process(hotelTraining);
+		Vector <Vector <Word> > opinionInSentences = new Vector< Vector <Word> > ();
+		Set <String> gtOpinion = makeWordSet(new File("gt_opinion.txt"));
+		for (HotelComment hc : hotelCommentList) {
+			String concatSentence = StringUtils.join(hc.getSentences(), "");
+			Vector <Word> opinions = new Vector <Word>();
+			for (String opinion : gtOpinion) {
+				if (concatSentence.indexOf(opinion) != -1) {
+					if (InputFormatProcessor.isPrefixNegative(concatSentence, opinion)) {
+						opinions.add(new Word(opinion, -1));
+					} else {
+						opinions.add(new Word(opinion, 1));
+					}
+					
+				}
+			}
+			opinionInSentences.add(opinions);
+		}
+		Map <String, Integer> wordToLike = new HashMap <String, Integer>(); 
+		recursiveDetermineMLEOpinionWord(opinionInSentences, wordToLike, hotelCommentList);
+		BufferedWriter bw = new BufferedWriter(new FileWriter(new File("recursive_opinion.txt")));
+		for (String key : wordToLike.keySet()) {
+			bw.write(key + ":" + wordToLike.get(key)+"\n");
+		}
+		bw.close();
+
+		
 	}
 	
 	
@@ -132,19 +173,14 @@ public class NLP {
 		Set <String> aspectSet = makeWordSet(new File("gt_aspect.txt"));
 		
 		Map <String, Double> opinionToPolarity = new HashMap<String, Double>();
-		BufferedReader br = new BufferedReader(new FileReader(new File("positive_opinion.txt")));
+		BufferedReader br = new BufferedReader(new FileReader(new File("recursive_opinion.txt")));
 		String line;
 		while ((line = br.readLine()) != null) {
-			String [] tokens = line.split("\\s+");
+			String [] tokens = line.split(":");
 			opinionToPolarity.put(tokens[0], Double.valueOf(tokens[1]));
 		}
 		br.close();
-		br = new BufferedReader(new FileReader(new File("negative_opinion.txt")));
-		while ((line = br.readLine()) != null) {
-			String [] tokens = line.split("\\s+");
-			opinionToPolarity.put(tokens[0], -1*Double.valueOf(tokens[1]));
-		}
-		br.close();
+		
 		
 		BufferedWriter bw = new BufferedWriter(new FileWriter(new File("hotel_test_12.out")));
 		JointParser parser;
@@ -254,7 +290,7 @@ public class NLP {
 		BufferedReader br = new BufferedReader(new FileReader(file));
 		Set <String> set = new HashSet <String>(); 
 		while ((word = br.readLine()) != null) {
-			set.add(word);			
+			set.add(word.split("\\s+")[0]);			
 		}
 		br.close();
 		return set;
