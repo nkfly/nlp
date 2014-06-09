@@ -32,6 +32,7 @@ import edu.fudan.util.exception.LoadModelException;
 import ntu.nlp.format.DependencyPair;
 import ntu.nlp.format.DocumentVector;
 import ntu.nlp.format.HotelComment;
+import ntu.nlp.format.Input;
 import ntu.nlp.format.InputFormatProcessor;
 import ntu.nlp.format.Word;
 import ntu.nlp.rule.RuleManager;
@@ -46,7 +47,10 @@ public class NLP {
 
 	public static void main(String [] args){
 		try {
-			stageThreeProcess();
+//			runRecursiveDetermineMLEOpinionWord();
+//			calculateOpinionAccuracy();
+			stageThreeProcess(new File("211047_hotel_test.txt"), Input.TEST);
+			
 			
 		} catch (Exception e) {
 			// TODO Auto-generated catch block
@@ -55,6 +59,39 @@ public class NLP {
 
 
 
+	}
+	
+	public static void stageFourProcess() throws IOException {
+		File hotelTest = new File("211047_hotel_test.txt");
+		List <HotelComment> hotelCommentList = InputFormatProcessor.process(hotelTest, Input.TEST);
+		
+		
+		
+		Set <String>  opinionWords = makeWordSet(new File("gt_opinion.txt"));
+		Map <String, Integer> wordToDimensionMap = makeWordToDimensionMap(opinionWords);
+		int maxDimension = wordToDimensionMap.size();
+		
+		List <DocumentVector> documentVectorList = InputFormatProcessor.convertToDocumentVector(wordToDimensionMap, hotelCommentList);
+		
+		BufferedWriter bw = new BufferedWriter(new FileWriter(new File("svm_test.in")));
+		for (DocumentVector dv : documentVectorList ) {
+			bw.write(dv.toLIBSVMString(maxDimension) + "\n");			
+		}
+		bw.close();
+		
+		bw = new BufferedWriter(new FileWriter(new File("doucment_vector_test.csv")));
+		for (int i = 1;i <= maxDimension;i++) {
+			bw.write(i + ",");
+		}
+		bw.write("class\n");
+		
+		for (DocumentVector dv : documentVectorList ) {
+			bw.write(dv.toCSVString(maxDimension) + "\n");			
+		}
+		bw.close();
+		
+		
+		
 	}
 	
 	public static void calculateOpinionAccuracy() throws IOException {
@@ -96,7 +133,7 @@ public class NLP {
 	
 	public static void runRecursiveDetermineMLEOpinionWord() throws IOException {
 		File hotelTraining = new File("207884_hotel_training.txt");
-		List <HotelComment> hotelCommentList = InputFormatProcessor.process(hotelTraining);
+		List <HotelComment> hotelCommentList = InputFormatProcessor.process(hotelTraining, Input.TRAINING);
 		Vector <Vector <Word> > opinionInSentences = new Vector< Vector <Word> > ();
 		Set <String> gtOpinion = makeWordSet(new File("gt_opinion.txt"));
 		for (HotelComment hc : hotelCommentList) {
@@ -145,7 +182,7 @@ public class NLP {
 		String determinedWord = opinionInSentences.get(minIndex).get(0).getWord();
 		
 		double sumOfWeight = 0.0;
-		
+
 		
 		for (int i = 0;i < opinionInSentences.size(); i++) {
 			Vector <Word> row = opinionInSentences.get(i);
@@ -165,9 +202,8 @@ public class NLP {
 				
 	}
 	
-	public static void stageThreeProcess() throws Exception {
-		File hotelTraining = new File("207884_hotel_training.txt");
-		List <HotelComment> hotelCommentList = InputFormatProcessor.process(hotelTraining);
+	public static void stageThreeProcess(File hotel, Input type) throws Exception {
+		List <HotelComment> hotelCommentList = InputFormatProcessor.process(hotel, type);
 		
 		
 		Set <String> aspectSet = makeWordSet(new File("gt_aspect.txt"));
@@ -246,7 +282,7 @@ public class NLP {
 				} else if (aspectToPolarity.get(aspect) < 0){
 					negativeAspect += (aspect + "\t");
 				} else {// the aspect polarity is 0, so it is assumed to be the same as the document
-					if (hotelComment.getLike() == 1) {
+					if (hotelComment.getLike() == 1 ) {
 						positiveAspect += (aspect + "\t");
 					} else {
 						negativeAspect += (aspect + "\t");
@@ -256,7 +292,7 @@ public class NLP {
 			}
 			bw.write(positiveAspect.trim() + "\n");
 			bw.write(negativeAspect.trim() + "\n");
-			bw.write( (sumOfPolarity >= 0 ? 1 : 2) + "\n");
+			bw.write( hotelComment.getLike() + "\n");
 		}
 		bw.close();
 		
@@ -270,9 +306,9 @@ public class NLP {
 			if (opinionWordIndex == -1)continue;
 			
 			int distance = Math.abs(opinionWordIndex - aspectIndex);
-			if (distance == 0)continue;
+			if (distance >= 6)continue;
 			
-			double coeff = 5/distance;// 5 is a magic number
+			double coeff = 1;
 			if (InputFormatProcessor.isPrefixNegative(sentence, opinion)) {
 				polarity += -1*opinionToPolarity.get(opinion)*coeff;
 			} else {
@@ -311,7 +347,7 @@ public class NLP {
 		Map <String, Integer> wordToDimensionMap = makeWordToDimensionMap(opinionWords);
 		int maxDimension = wordToDimensionMap.size();
 		File hotelTraining = new File("207884_hotel_training.txt");
-		List <HotelComment> hotelCommentList = InputFormatProcessor.process(hotelTraining);
+		List <HotelComment> hotelCommentList = InputFormatProcessor.process(hotelTraining, Input.TRAINING);
 		
 		List <DocumentVector> documentVectorList = InputFormatProcessor.convertToDocumentVector(wordToDimensionMap, hotelCommentList);
 		
@@ -403,7 +439,7 @@ public class NLP {
 	public static void stageOneProcess() throws IOException{
 		//System.out.println((new File(".")).getAbsolutePath());
 				File hotelTraining = new File("207884_hotel_training.txt");
-				List <HotelComment> hotelCommentList = InputFormatProcessor.process(hotelTraining);
+				List <HotelComment> hotelCommentList = InputFormatProcessor.process(hotelTraining, Input.TRAINING);
 
 				JointParser parser;
 				Map <String, DependencyPair> dependencyPairToCount = new HashMap<String, DependencyPair>();

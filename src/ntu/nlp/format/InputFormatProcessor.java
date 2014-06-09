@@ -16,6 +16,22 @@ import java.util.Map;
 import org.apache.commons.lang3.StringUtils;
 
 public class InputFormatProcessor {
+	public static void randomForestResultMerge(File randomForestResult, List <HotelComment> hcl) throws IOException {
+		BufferedReader br = new BufferedReader(new FileReader(randomForestResult));
+		String line;
+		int index = 0;
+		while ((line = br.readLine()) != null) {
+			line = br.readLine().trim();
+			String [] predictions = line.split("\\s+");
+			for (String prediction : predictions) {
+				hcl.get(index).setLike(Integer.parseInt(prediction));
+				index++;
+			}
+		}
+		br.close();
+		
+		
+	}
 	public static List <DocumentVector> convertToDocumentVector(Map <String, Integer> wordToDimensionMap ,List <HotelComment> hotelCommentList){
 		List <DocumentVector> documentVectorList = new ArrayList <DocumentVector>();
 		Map <Integer, Double> dimensionToIdf = new HashMap<Integer, Double>();
@@ -104,20 +120,26 @@ public class InputFormatProcessor {
 		return false;
 		
 	}
-	public static List <HotelComment> process(File hotelTraining){
+	public static List <HotelComment> process(File hotelTraining, Input type){
 		List <HotelComment> hotelCommentList = new ArrayList <HotelComment>();
 		try {
 			//BufferedReader bf = new BufferedReader(new FileReader(hotelTraining));
 			BufferedReader bf = new BufferedReader(new InputStreamReader(new FileInputStream(hotelTraining), "UTF8"));
 			String line = null;
 			while ( (line = bf.readLine()) != null) {
-				int like = Integer.parseInt(line);
-				line = bf.readLine();
+				int like = 0;
+				if (type == Input.TRAINING) {
+					like = Integer.parseInt(line);
+					line = bf.readLine();
+				}
 				int indexOfDelimiter = line.indexOf('|');
 				int id = Integer.parseInt(line.substring(0, indexOfDelimiter));
 				String opinion = line.substring(indexOfDelimiter+1);
 				hotelCommentList.add(new HotelComment(id, like, opinion));
 
+			}
+			if (type == Input.TEST) {
+				InputFormatProcessor.randomForestResultMerge(new File("predict_result"), hotelCommentList);
 			}
 
 			bf.close();
